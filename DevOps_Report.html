@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DevOps Automation Report — ACEest Fitness</title>
+<style>
+@page { size: A4; margin: 18mm; }
+body { font-family: Arial, Helvetica, sans-serif; color: #1f2937; line-height: 1.45; margin: 0; }
+main { max-width: 820px; margin: 24px auto; padding: 8px 28px 28px; }
+h1 { color: #0f4c81; border-bottom: 3px solid #1593a8; padding-bottom: 10px; }
+h2 { color: #0f4c81; margin-top: 28px; }
+a { color: #075985; }
+.meta { color: #475569; }
+ol, ul { padding-left: 24px; }
+li { margin: 8px 0; }
+.challenge { margin: 12px 0; }
+strong { color: #243b53; }
+@media print { main { max-width: none; margin: 0; padding: 0; } a { text-decoration: none; } }
+</style>
+</head>
+<body>
+<main>
+<h1>DevOps Automation Report — ACEest Fitness</h1>
+<p class="meta"><strong>Project repository:</strong> <a href="https://github.com/2025tm93233/devops-assignment-2">2025tm93233/devops-assignment-2</a><br>
+<strong>Report date:</strong> 25 November 2026</p>
+
+<h2>1. Project and CI/CD architecture</h2>
+<p>ACEest Fitness is a Python desktop application built with Tkinter. It manages fitness-club information using SQLite and includes workout, charting, and PDF-report functionality. The repository combines application source code, tests, container packaging, Jenkins automation, GitHub Actions, and Kubernetes deployment configuration.</p>
+<p>The current delivery path has two related but distinct workflows:</p>
+<ol>
+<li><strong>GitHub Actions — continuous integration and image build.</strong> A push starts the workflow in <code>.github/workflows/ci.yml</code> on an Ubuntu runner. It checks out the source, installs <code>python3-tk</code>, discovers and runs the unit tests, and then builds a Docker image.</li>
+<li><strong>Jenkins — test, build, and deployment.</strong> The <code>Jenkinsfile</code> defines test and Docker-build stages, followed by a deployment stage. It selects shell commands on Unix agents and batch commands on Windows agents.</li>
+<li><strong>Docker — packaged runtime.</strong> The Dockerfile starts from Debian Bookworm slim and installs Python, Tkinter, Matplotlib, Xvfb, and supporting packages. It installs <code>fpdf2</code> in a virtual environment and launches the application under Xvfb.</li>
+<li><strong>Kubernetes — desired deployment configuration.</strong> The manifest requests two replicas and configures rolling updates, resource requests and limits, and process-based liveness and readiness probes.</li>
+</ol>
+<p>In the intended Jenkins path, a successful test stage permits the image build, which is followed by Kubernetes deployment and rollout verification. If verification fails, the pipeline requests rollback and bounded deployment cleanup.</p>
+
+<h2>2. Challenges and mitigation strategies</h2>
+<p class="challenge"><strong>GUI dependencies in automated environments.</strong> The application uses Tkinter and Matplotlib, while CI runners and containers commonly have no graphical display. The GitHub Actions workflow installs Tkinter dependencies and executes tests without starting the GUI; the Docker image uses Xvfb for headless graphical support.</p>
+<p class="challenge"><strong>Consistent execution across Jenkins agents.</strong> Jenkins may run on either Unix or Windows. The pipeline explicitly selects <code>sh</code> or <code>bat</code> for its test, Docker, and Kubernetes commands. This improves portability but requires equivalent tools to be installed on both agent types.</p>
+<p class="challenge"><strong>Deployment failure and recovery.</strong> Applying a Kubernetes manifest does not prove that the new release becomes healthy. The Jenkins pipeline waits for rollout status with a timeout and attempts a rollback if verification fails.</p>
+<p class="challenge"><strong>Image availability and tag consistency.</strong> The two CI paths build images with different tags: GitHub Actions uses the commit SHA and <code>latest</code>, while Jenkins uses the Jenkins build number and <code>latest</code>. A shared registry and one consistent tagging strategy would make these flows interoperable.</p>
+<p class="challenge"><strong>Application and Kubernetes service model.</strong> The Docker command starts a Tkinter desktop GUI, but the Kubernetes manifest declares container port 8080 and a NodePort service. The application code should be assessed to determine whether it should run as a desktop workload, expose an HTTP interface, or use a different deployment model.</p>
+
+<h2>3. Key automation outcomes</h2>
+<ul>
+<li>Pushes to the GitHub repository trigger automated unit-test discovery and a Docker image build.</li>
+<li>The test suite covers database initialization and selected client, workout-program, membership, and login logic.</li>
+<li>Docker packages the Python runtime and the graphical/reporting dependencies needed by the application.</li>
+<li>Jenkins provides a defined path from testing to image building and Kubernetes rollout, including a bounded rollout wait and rollback attempt.</li>
+<li>Kubernetes configuration specifies two application replicas, rolling-update behavior, resource bounds, probes, and a NodePort service.</li>
+<li><strong>Local verification for this report:</strong> <code>python -m unittest discover -s . -p 'test_*.py' -v</code> completed successfully: <strong>8 tests passed</strong>. This verifies the test suite in the local project environment.</li>
+</ul>
+<p>The repository therefore demonstrates meaningful CI automation and supplies deployment building blocks. Before claiming a complete, repeatable CD release, the image publication/distribution mechanism, Kubernetes runtime environment, application network model, registry credentials, and deployment rollback configuration should be validated end-to-end.</p>
+</main>
+</body>
+</html>
