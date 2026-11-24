@@ -10,6 +10,7 @@ RUN apt-get update \
         python3-tk \
         python3-matplotlib \
         xvfb \
+        xauth \
     && rm -rf /var/lib/apt/lists/*
 
 RUN python3 -m venv --system-site-packages /opt/venv \
