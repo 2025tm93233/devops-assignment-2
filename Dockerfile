@@ -9,6 +9,7 @@ RUN apt-get update \
         python3-venv \
         python3-tk \
         python3-matplotlib \
+        xvfb \
     && rm -rf /var/lib/apt/lists/*
 
 RUN python3 -m venv --system-site-packages /opt/venv \
@@ -20,4 +21,4 @@ WORKDIR /app
 
 COPY Aceestver.py .
 
-CMD ["python3", "Aceestver.py"]
+CMD ["xvfb-run", "-a", "python3", "Aceestver.py"]

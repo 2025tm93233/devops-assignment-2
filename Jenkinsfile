@@ -29,5 +29,35 @@ pipeline {
                 }
             }
         }
+
+        stage('Deploy with rollback') {
+            steps {
+                script {
+                    def deployCommand = "kubectl apply -f kubernetes.yaml"
+                    def verifyCommand = "kubectl rollout status deployment/aceest-fitness --timeout=120s"
+                    def rollbackCommand = "kubectl rollout undo deployment/aceest-fitness"
+
+                    if (isUnix()) {
+                        sh(deployCommand)
+                        try {
+                            sh(verifyCommand)
+                        } catch (Exception rolloutFailure) {
+                            sh(rollbackCommand)
+                            sh(verifyCommand)
+                            error("Deployment failed and was rolled back to the previous stable revision")
+                        }
+                    } else {
+                        bat(deployCommand)
+                        try {
+                            bat(verifyCommand)
+                        } catch (Exception rolloutFailure) {
+                            bat(rollbackCommand)
+                            bat(verifyCommand)
+                            error("Deployment failed and was rolled back to the previous stable revision")
+                        }
+                    }
+                }
+            }
+        }
     }
 }
